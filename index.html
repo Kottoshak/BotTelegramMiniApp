@@ -17,6 +17,7 @@
     .btn-primary {background:#0064ff; color:white;}
     .btn-ghost {background:transparent; border:1px solid #dfe7ff;}
     small.note {color:#666;display:block;margin-top:10px;}
+    .loading {display:none; text-align:center; margin-top:10px;}
   </style>
 </head>
 <body>
@@ -24,6 +25,7 @@
   <div class="card">
     <label>Категория</label>
     <select id="category">
+      <option value="">Любая категория</option>
       <option value="авто">Авто</option>
       <option value="недвижимость">Недвижимость</option>
       <option value="электроника">Электроника</option>
@@ -52,6 +54,8 @@
       <button id="reset" class="btn-ghost">Сбросить</button>
     </div>
 
+    <div id="loading" class="loading">Отправка данных...</div>
+    
     <small class="note">Кнопка "Применить" отправит JSON в бота через Telegram WebApp API и свернёт мини‑приложение.</small>
   </div>
 
@@ -65,7 +69,14 @@
           isExpanded: false,
           expand() { this.isExpanded = true; console.log("mock expand"); },
           close() { console.log("mock close"); },
-          sendData(data) { console.log("mock sendData:", data); alert("Mock sendData:\n" + data); },
+          sendData(data) { 
+            console.log("mock sendData:", data); 
+            alert("Mock sendData:\n" + data); 
+            // Имитация успешной отправки
+            setTimeout(() => {
+              document.getElementById('loading').style.display = 'none';
+            }, 1000);
+          },
           MainButton: { show() {}, hide() {} }
         }
       };
@@ -75,6 +86,9 @@
     try { tg.expand(); } catch(e){}
 
     document.getElementById("apply").addEventListener("click", () => {
+      const loading = document.getElementById('loading');
+      loading.style.display = 'block';
+      
       const data = {
         category: document.getElementById("category").value,
         price_min: document.getElementById("price_min").value || null,
@@ -83,16 +97,28 @@
         city: document.getElementById("city").value.trim(),
         ts: new Date().toISOString()
       };
+      
       const payload = JSON.stringify(data);
+      
       // Отправляем данные в бота
       try {
         tg.sendData(payload);
+        console.log("Данные отправлены:", payload);
       } catch (err) {
         console.error("sendData failed:", err);
         alert("Ошибка отправки данных в Telegram: " + err);
+        loading.style.display = 'none';
+        return;
       }
+      
       // Закрываем (сворачиваем) мини-приложение
-      try { tg.close(); } catch(e) {}
+      setTimeout(() => {
+        try { 
+          tg.close(); 
+        } catch(e) {
+          console.error("Ошибка при закрытии:", e);
+        }
+      }, 500);
     });
 
     document.getElementById("reset").addEventListener("click", () => {
@@ -105,4 +131,3 @@
   </script>
 </body>
 </html>
-
