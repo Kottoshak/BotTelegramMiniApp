@@ -17,7 +17,7 @@
     .btn-primary {background:#0064ff; color:white;}
     .btn-ghost {background:transparent; border:1px solid #dfe7ff;}
     small.note {color:#666;display:block;margin-top:10px;}
-    .loading {display:none; text-align:center; margin-top:10px;}
+    .loading {display:none; text-align:center; margin-top:10px; color:#0064ff;}
   </style>
 </head>
 <body>
@@ -56,39 +56,26 @@
 
     <div id="loading" class="loading">Отправка данных...</div>
     
-    <small class="note">Кнопка "Применить" отправит JSON в бота через Telegram WebApp API и свернёт мини‑приложение.</small>
+    <small class="note">Кнопка "Применить" отправит данные в бота и закроет мини‑приложение.</small>
   </div>
 
   <script>
-    // Поддержка запуска в обычном браузере (для локальной проверки)
-    if (!window.Telegram || !window.Telegram.WebApp) {
-      console.warn("Telegram WebApp API не обнаружен — включён мок для локального тестирования.");
-      window.Telegram = {
-        WebApp: {
-          initData: null,
-          isExpanded: false,
-          expand() { this.isExpanded = true; console.log("mock expand"); },
-          close() { console.log("mock close"); },
-          sendData(data) { 
-            console.log("mock sendData:", data); 
-            alert("Mock sendData:\n" + data); 
-            // Имитация успешной отправки
-            setTimeout(() => {
-              document.getElementById('loading').style.display = 'none';
-            }, 1000);
-          },
-          MainButton: { show() {}, hide() {} }
-        }
-      };
-    }
-
+    // Проверяем, открыто ли как ReplyKeyboard WebApp
     const tg = window.Telegram.WebApp;
-    try { tg.expand(); } catch(e){}
+    
+    // Всегда пытаемся развернуть приложение
+    try { 
+      tg.expand(); 
+      console.log("WebApp развернут");
+    } catch(e) {
+      console.log("Ошибка разворачивания:", e);
+    }
 
     document.getElementById("apply").addEventListener("click", () => {
       const loading = document.getElementById('loading');
       loading.style.display = 'block';
       
+      // Собираем данные
       const data = {
         category: document.getElementById("category").value,
         price_min: document.getElementById("price_min").value || null,
@@ -99,19 +86,20 @@
       };
       
       const payload = JSON.stringify(data);
-      
-      // Отправляем данные в бота
+      console.log("Отправляемые данные:", payload);
+
+      // Пытаемся отправить данные через sendData
       try {
         tg.sendData(payload);
-        console.log("Данные отправлены:", payload);
+        console.log("Данные отправлены через sendData");
       } catch (err) {
         console.error("sendData failed:", err);
-        alert("Ошибка отправки данных в Telegram: " + err);
+        alert("Ошибка отправки данных. Убедитесь, что WebApp открыт через кнопку в клавиатуре.");
         loading.style.display = 'none';
         return;
       }
       
-      // Закрываем (сворачиваем) мини-приложение
+      // Закрываем мини-приложение
       setTimeout(() => {
         try { 
           tg.close(); 
